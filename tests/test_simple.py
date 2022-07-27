@@ -31,3 +31,22 @@ def test_throttling() -> None:
     assert cooldown_time - alpha <= point4 - point3 <= cooldown_time + alpha
     assert point5 - point4 <= alpha
     assert point6 - point5 <= datetime.timedelta(seconds=2.0) + alpha
+
+
+def test_with_statement() -> None:
+    alpha = datetime.timedelta(seconds=0.01)
+    cooldown_time = datetime.timedelta(seconds=1.0)
+    throttle_controller = SimpleThrottleController.create(
+        default_cooldown_time=cooldown_time
+    )
+
+    point1 = datetime.datetime.now()
+    with throttle_controller.use("a"):
+        pass
+    point2 = datetime.datetime.now()
+    with throttle_controller.use("a"):
+        pass
+    point3 = datetime.datetime.now()
+
+    assert point2 - point1 <= alpha
+    assert cooldown_time - alpha < point3 - point2 <= cooldown_time + alpha
