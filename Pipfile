@@ -9,7 +9,10 @@ name = "pypi"
 pytest = "*"
 black = "*"
 isort = "*"
+flake8 = "*"
+mypy = "*"
 
 [scripts]
 test = "pytest"
 format = "sh -c 'isort tests/ throttle_controller/ ; black tests/ throttle_controller/'"
+lint = "sh -c 'flake8 tests/ throttle_controller/ && mypy tests/ throttle_controller/ && isort --check tests/ throttle_controller/ && black --check tests/ throttle_controller/'"
