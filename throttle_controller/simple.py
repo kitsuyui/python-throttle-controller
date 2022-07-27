@@ -1,16 +1,24 @@
+from __future__ import annotations
+
 import datetime
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type, Union
 
 from .protocol import ThrottleController
+
+Interval = Union[datetime.timedelta, float, int]
 
 
 @dataclass
 class SimpleThrottleController:
-    default_cooldown_time: datetime.timedelta = datetime.timedelta(seconds=3.0)
+    default_cooldown_time: datetime.timedelta
     last_use_times: Dict[str, datetime.datetime] = field(default_factory=dict)
     cooldown_times: Dict[str, datetime.timedelta] = field(default_factory=dict)
+
+    @classmethod
+    def create(cls, *, default_cooldown_time: Interval) -> SimpleThrottleController:
+        return cls(default_cooldown_time=interval_to_timedelta(default_cooldown_time))
 
     def cooldown_time_for(self, key: str) -> datetime.timedelta:
         return self.cooldown_times.get(key, self.default_cooldown_time)
@@ -44,3 +52,11 @@ class SimpleThrottleController:
 
 if TYPE_CHECKING:
     _: Type[ThrottleController] = SimpleThrottleController
+
+
+def interval_to_timedelta(interval: Optional[Interval]) -> datetime.timedelta:
+    if interval is None:
+        return datetime.timedelta(0)
+    if isinstance(interval, datetime.timedelta):
+        return interval
+    return datetime.timedelta(seconds=interval)
