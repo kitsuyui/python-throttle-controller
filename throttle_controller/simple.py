@@ -3,11 +3,10 @@ from __future__ import annotations
 import datetime
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Union
+from typing import Dict
 
 from .protocol import Key, ThrottleController
-
-Interval = Union[datetime.timedelta, float, int]
+from .utils.interval import Interval, interval_to_timedelta
 
 
 @dataclass
@@ -51,11 +50,3 @@ class SimpleThrottleController(ThrottleController):
 
     def set_cooldown_time(self, key: Key, cooldown_time: Interval) -> None:
         self.cooldown_times[key] = interval_to_timedelta(cooldown_time)
-
-
-def interval_to_timedelta(interval: Optional[Interval]) -> datetime.timedelta:
-    if interval is None:
-        return datetime.timedelta(0)
-    if isinstance(interval, datetime.timedelta):
-        return interval
-    return datetime.timedelta(seconds=interval)
