@@ -49,6 +49,9 @@ class SimpleThrottleController:
     def _has_ever_used(self, key: str) -> bool:
         return key in self.last_use_times
 
+    def set_cooldown_time(self, key: str, cooldown_time: Interval) -> None:
+        self.cooldown_times[key] = interval_to_timedelta(cooldown_time)
+
 
 if TYPE_CHECKING:
     _: Type[ThrottleController] = SimpleThrottleController
