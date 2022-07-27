@@ -36,5 +36,5 @@ jobs:
 
       - name: Dry Run Install
         run: |
-          pipenv run python setup.py build
+          pipenv run python -m build --sdist --wheel --outdir dist/ .
           pipenv run python setup.py install --dry-run
