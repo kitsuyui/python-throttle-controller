@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Dict, Generator, Optional, Type, Union
 
 from .protocol import ThrottleController
 
@@ -19,6 +20,14 @@ class SimpleThrottleController:
     @classmethod
     def create(cls, *, default_cooldown_time: Interval) -> SimpleThrottleController:
         return cls(default_cooldown_time=interval_to_timedelta(default_cooldown_time))
+
+    @contextlib.contextmanager
+    def use(self, key: str) -> Generator[None, None, None]:
+        self.wait_if_needed(key)
+        try:
+            yield
+        finally:
+            self.record_use_time_as_now(key)
 
     def cooldown_time_for(self, key: str) -> datetime.timedelta:
         return self.cooldown_times.get(key, self.default_cooldown_time)
