@@ -26,8 +26,7 @@ jobs:
 
       - name: Build
         run: |
-          python3 setup.py sdist --formats=zip
-          python3 setup.py check
+          pipenv run python -m build --sdist --wheel --outdir dist/ .
 
       - name: Publish distribution to Test PyPI
         uses: pypa/gh-action-pypi-publish@master
