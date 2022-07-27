@@ -1,5 +1,9 @@
 # throttle-controller
 
+[![codecov](https://codecov.io/gh/kitsuyui/python-throttle-controller/branch/main/graph/badge.svg?token=90X7WXZDD2)](https://codecov.io/gh/kitsuyui/python-throttle-controller)
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/throttle-controller.svg)](https://pypi.python.org/pypi/throttle-controller/)
+
 ## Usage
 
 ```python
