@@ -1,5 +1,6 @@
+import contextlib
 import datetime
-from typing import Hashable, Protocol
+from typing import Generator, Hashable, Protocol
 
 Key = Hashable
 
@@ -22,3 +23,11 @@ class ThrottleController(Protocol):  # pragma: no cover
 
     def next_available_time(self, key: Key) -> datetime.datetime:
         ...
+
+    @contextlib.contextmanager
+    def use(self, key: Key) -> Generator[None, None, None]:
+        self.wait_if_needed(key)
+        try:
+            yield
+        finally:
+            self.record_use_time_as_now(key)
