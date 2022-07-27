@@ -1,0 +1,45 @@
+name: Upload PyPI package release
+
+on:
+  release:
+    # "released" events are emitted either when directly be released or be edited from pre-released.
+    types: [prereleased, released]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install pipenv
+        run: pipx install pipenv
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+          cache: "pipenv"
+          architecture: "x64"
+
+      - name: Install dependencies
+        run: pipenv sync --dev
+
+      - name: Build
+        run: |
+          python3 setup.py sdist --formats=zip
+          python3 setup.py check
+
+      - name: Publish distribution to Test PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        if: github.event_name == 'release' && github.event.release.prerelease
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+
+      - name: Publish distribution to PyPI
+        if: github.event_name == 'release' && !github.event.release.prerelease
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
