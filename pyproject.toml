@@ -3,3 +3,5 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
 
 [tool.setuptools_scm]
 write_to = "throttle_controller/_version.py"
+version_scheme = "post-release"
+local_scheme = "no-local-version"
