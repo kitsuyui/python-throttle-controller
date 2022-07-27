@@ -2,7 +2,7 @@ import datetime
 from typing import Protocol
 
 
-class ThrottleController(Protocol):
+class ThrottleController(Protocol):  # pragma: no cover
     def cooldown_time_for(self, key: str) -> datetime.timedelta:
         ...
 

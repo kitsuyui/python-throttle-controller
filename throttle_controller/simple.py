@@ -1,7 +1,7 @@
 import datetime
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Type
 
 from .protocol import ThrottleController
 
@@ -9,8 +9,8 @@ from .protocol import ThrottleController
 @dataclass
 class SimpleThrottleController:
     default_cooldown_time: datetime.timedelta = datetime.timedelta(seconds=3.0)
-    last_use_times: dict[str, datetime.datetime] = field(default_factory=dict)
-    cooldown_times: dict[str, datetime.timedelta] = field(default_factory=dict)
+    last_use_times: Dict[str, datetime.datetime] = field(default_factory=dict)
+    cooldown_times: Dict[str, datetime.timedelta] = field(default_factory=dict)
 
     def cooldown_time_for(self, key: str) -> datetime.timedelta:
         return self.cooldown_times.get(key, self.default_cooldown_time)
@@ -43,4 +43,4 @@ class SimpleThrottleController:
 
 
 if TYPE_CHECKING:
-    _: type[ThrottleController] = SimpleThrottleController
+    _: Type[ThrottleController] = SimpleThrottleController
