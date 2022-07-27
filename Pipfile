@@ -7,6 +7,9 @@ name = "pypi"
 
 [dev-packages]
 pytest = "*"
+black = "*"
+isort = "*"
 
 [scripts]
 test = "pytest"
+format = "sh -c 'isort tests/ throttle_controller/ ; black tests/ throttle_controller/'"
