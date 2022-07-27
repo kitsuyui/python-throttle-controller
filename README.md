@@ -5,7 +5,7 @@
 ```python
 from throttle_controller import SimpleThrottleController
 
-throttle = SimpleThrottleController(default_cooldown_time=3.0)
+throttle = SimpleThrottleController.create(default_cooldown_time=3.0)
 throttle.wait_if_needed("http://example.com/path/to/api")
 throttle.record_use_time_as_now("http://example.com/path/to/api")
 ... # requests
