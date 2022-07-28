@@ -27,7 +27,5 @@ class ThrottleController(Protocol):  # pragma: no cover
     @contextlib.contextmanager
     def use(self, key: Key) -> Generator[None, None, None]:
         self.wait_if_needed(key)
-        try:
-            yield
-        finally:
-            self.record_use_time_as_now(key)
+        self.record_use_time_as_now(key)
+        yield
