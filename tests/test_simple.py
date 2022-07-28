@@ -50,3 +50,26 @@ def test_with_statement() -> None:
 
     assert point2 - point1 <= alpha
     assert cooldown_time - alpha < point3 - point2 <= cooldown_time + alpha
+
+
+def test_set_cooldown_time() -> None:
+    alpha = datetime.timedelta(seconds=0.01)
+    cooldown_time1 = datetime.timedelta(seconds=1.0)
+    cooldown_time2 = datetime.timedelta(seconds=2.0)
+
+    throttle_controller = SimpleThrottleController(default_cooldown_time=cooldown_time1)
+    point1 = datetime.datetime.now()
+    throttle_controller.wait_if_needed("a")
+    throttle_controller.record_use_time_as_now("a")
+    point2 = datetime.datetime.now()
+    throttle_controller.wait_if_needed("a")
+    throttle_controller.record_use_time_as_now("a")
+    point3 = datetime.datetime.now()
+    throttle_controller.set_cooldown_time("a", 2.0)
+    throttle_controller.wait_if_needed("a")
+    throttle_controller.record_use_time_as_now("a")
+    point4 = datetime.datetime.now()
+
+    assert point2 - point1 <= alpha
+    assert cooldown_time1 - alpha <= point3 - point2 <= cooldown_time1 + alpha
+    assert cooldown_time2 - alpha <= point4 - point3 <= cooldown_time2 + alpha
