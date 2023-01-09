@@ -15,6 +15,7 @@ typing-extensions = "*"
 pytest-cov = "*"
 coverage = "*"
 build = "*"
+pyupgrade = "*"
 
 [scripts]
 test = "pytest"
