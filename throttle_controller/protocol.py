@@ -1,6 +1,13 @@
 import contextlib
 import datetime
-from typing import Generator, Hashable, Protocol
+import sys
+from typing import Generator, Hashable
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
+
 
 Key = Hashable
 
