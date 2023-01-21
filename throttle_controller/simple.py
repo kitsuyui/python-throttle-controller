@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import time
 from dataclasses import dataclass, field
-from typing import Dict
 
 from .protocol import Key, ThrottleController
 from .utils.interval import Interval, interval_to_timedelta
@@ -12,12 +11,16 @@ from .utils.interval import Interval, interval_to_timedelta
 @dataclass
 class SimpleThrottleController(ThrottleController):
     default_cooldown_time: datetime.timedelta
-    last_use_times: Dict[Key, datetime.datetime] = field(default_factory=dict)
-    cooldown_times: Dict[Key, datetime.timedelta] = field(default_factory=dict)
+    last_use_times: dict[Key, datetime.datetime] = field(default_factory=dict)
+    cooldown_times: dict[Key, datetime.timedelta] = field(default_factory=dict)
 
     @classmethod
-    def create(cls, *, default_cooldown_time: Interval) -> SimpleThrottleController:
-        return cls(default_cooldown_time=interval_to_timedelta(default_cooldown_time))
+    def create(
+        cls, *, default_cooldown_time: Interval
+    ) -> SimpleThrottleController:
+        return cls(
+            default_cooldown_time=interval_to_timedelta(default_cooldown_time)
+        )
 
     def cooldown_time_for(self, key: Key) -> datetime.timedelta:
         return self.cooldown_times.get(key, self.default_cooldown_time)
