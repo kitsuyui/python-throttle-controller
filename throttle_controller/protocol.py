@@ -6,7 +6,7 @@ from typing import Generator, Hashable
 if sys.version_info >= (3, 8):
     from typing import Protocol
 else:
-    from typing_extensions import Protocol
+    from typing_extensions import Protocol  # pragma: no cover
 
 
 Key = Hashable
