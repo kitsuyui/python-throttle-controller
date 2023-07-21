@@ -5,6 +5,11 @@
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![codecov](https://codecov.io/gh/kitsuyui/python-throttle-controller/branch/main/graph/badge.svg?token=90X7WXZDD2)](https://codecov.io/gh/kitsuyui/python-throttle-controller)
 
+## Motivation
+
+This package provides a simple throttle controller for general use-cases.
+For example, you can use this package to throttle API requests to avoid rate-limiting.
+
 ## Usage
 
 ```python
