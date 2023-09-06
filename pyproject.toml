@@ -15,7 +15,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 typing_extensions = "*"
 
 [tool.poetry.group.dev.dependencies]
@@ -45,7 +45,7 @@ coverage-xml = "pytest --cov=throttle_controller --doctest-modules --cov-report=
 format = [
     { cmd = "isort throttle_controller"},
     { cmd = "black throttle_controller"},
-    { cmd = "pyupgrade --py37-plus throttle_controller/*.py"},
+    { cmd = "pyupgrade --py38-plus throttle_controller/*.py"},
 ]
 check = [
     { cmd = "isort --check-only --diff throttle_controller"},
