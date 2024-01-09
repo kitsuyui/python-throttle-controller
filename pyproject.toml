@@ -1,6 +1,3 @@
-[tool.black]
-line-length = 79
-
 [tool.poetry]
 # I use poetry as just a package manager.
 # So, I only write the settings that poetry needs.
@@ -19,13 +16,9 @@ python = "^3.8"
 typing_extensions = "*"
 
 [tool.poetry.group.dev.dependencies]
-black = "*"
+ruff = "*"
 pytest = "*"
-isort = "*"
-pyupgrade = "*"
 pytest-cov = "*"
-flake8 = "*"
-mypy = "*"
 poethepoet = "*"
 setuptools-scm = "*"
 build = "*"
@@ -42,17 +35,8 @@ write_to = "throttle_controller/_version.py"
 [tool.poe.tasks]
 test = "pytest"
 coverage-xml = "pytest --cov=throttle_controller --doctest-modules --cov-report=xml"
-format = [
-    { cmd = "isort throttle_controller"},
-    { cmd = "black throttle_controller"},
-    { cmd = "pyupgrade --py38-plus throttle_controller/*.py"},
-]
-check = [
-    { cmd = "isort --check-only --diff throttle_controller"},
-    { cmd = "black --check --diff throttle_controller"},
-    { cmd = "flake8 throttle_controller"},
-    { cmd = "mypy throttle_controller"},
-]
+format = "ruff format throttle_controller"
+check = "ruff check throttle_controller"
 build = [
     { cmd = "python -m build"}
 ]
@@ -66,3 +50,6 @@ ignore_missing_imports = false
 disallow_untyped_defs = false
 warn_return_any = false
 ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 79
