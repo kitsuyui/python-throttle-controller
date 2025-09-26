@@ -27,8 +27,8 @@ Homepage = "https://github.com/kitsuyui/python-throttle-controller"
 package-data = { "throttle_controller" = ["py.typed"], "*" = ["README.md, LICENSE"] }
 package-dir = { "throttle_controller" = "throttle_controller" }
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest",
     "pytest-cov",
     "poethepoet",
