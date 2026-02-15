@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/throttle-controller.svg?style=plastic)](https://badge.fury.io/py/throttle-controller)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/throttle-controller.svg)](https://pypi.python.org/pypi/throttle-controller/)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![codecov](https://codecov.io/gh/kitsuyui/python-throttle-controller/branch/main/graph/badge.svg?token=90X7WXZDD2)](https://codecov.io/gh/kitsuyui/python-throttle-controller)
+![Coverage](https://raw.githubusercontent.com/kitsuyui/octocov-central/main/badges/kitsuyui/python-throttle-controller/coverage.svg)
 
 ## Motivation
 
