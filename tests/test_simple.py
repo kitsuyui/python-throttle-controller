@@ -36,7 +36,9 @@ def test_throttling() -> None:
 def test_with_statement() -> None:
     alpha = datetime.timedelta(seconds=0.01)
     cooldown_time = datetime.timedelta(seconds=1.0)
-    throttle = SimpleThrottleController.create(default_cooldown_time=cooldown_time)
+    throttle = SimpleThrottleController.create(
+        default_cooldown_time=cooldown_time,
+    )
 
     point1 = datetime.datetime.now()
     with throttle.use("a"):
