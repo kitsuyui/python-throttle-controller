@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional, Union
 
-Interval = Union[datetime.timedelta, float, int]
+Interval = datetime.timedelta | float | int
 
 
-def interval_to_timedelta(interval: Optional[Interval]) -> datetime.timedelta:
+def interval_to_timedelta(interval: Interval | None) -> datetime.timedelta:
     if interval is None:
         return datetime.timedelta(seconds=0)
     if isinstance(interval, datetime.timedelta):
