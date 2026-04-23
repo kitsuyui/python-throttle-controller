@@ -104,4 +104,4 @@ select = [
 ]
 
 [tool.ruff.lint.mccabe]
-max-complexity = 3
+max-complexity = 2
