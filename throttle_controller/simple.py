@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import threading
 import time
 from collections.abc import Callable
@@ -9,6 +10,8 @@ from typing import Any
 
 from .protocol import Key, ThrottleController
 from .utils.interval import Interval, interval_to_timedelta
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -85,6 +88,7 @@ class SimpleThrottleController(ThrottleController):
             )
         self.last_use_times[key] = use_time
         self._last_monotonic_times.pop(key, None)
+        _logger.debug("recorded use of %r at %s", key, use_time.isoformat())
 
     def record_use_time_as_now(self, key: Key) -> None:
         """Record that *key* was used at the current time.
@@ -105,7 +109,9 @@ class SimpleThrottleController(ThrottleController):
             return datetime.timedelta(0)
         wait_time = self.wait_time_for(key)
         self._enforce_max_wait(wait_time)
-        time.sleep(wait_time.total_seconds())
+        seconds = wait_time.total_seconds()
+        _logger.debug("throttling %r: waiting %.3fs", key, seconds)
+        time.sleep(seconds)
         return wait_time
 
     def _enforce_max_wait(self, wait_time: datetime.timedelta) -> None:

@@ -1,5 +1,6 @@
 import concurrent.futures
 import datetime
+import logging
 from collections.abc import Callable
 from unittest.mock import patch
 
@@ -42,7 +43,9 @@ def manual_clock(start: datetime.datetime) -> Clock:
 
 def test_throttling(monkeypatch: pytest.MonkeyPatch) -> None:
     cooldown_time = datetime.timedelta(seconds=1.0)
-    now, sleep, monotonic = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
+    now, sleep, monotonic = manual_clock(
+        datetime.datetime(2026, 1, 2, 3, 4, 5)
+    )
     monkeypatch.setattr("throttle_controller.simple.time.sleep", sleep)
     monkeypatch.setattr("throttle_controller.simple.time.monotonic", monotonic)
     throttle = SimpleThrottleController(
@@ -77,7 +80,9 @@ def test_throttling(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_with_statement(monkeypatch: pytest.MonkeyPatch) -> None:
     cooldown_time = datetime.timedelta(seconds=1.0)
-    now, sleep, monotonic = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
+    now, sleep, monotonic = manual_clock(
+        datetime.datetime(2026, 1, 2, 3, 4, 5)
+    )
     monkeypatch.setattr("throttle_controller.simple.time.sleep", sleep)
     monkeypatch.setattr("throttle_controller.simple.time.monotonic", monotonic)
     throttle = SimpleThrottleController.create(
@@ -100,7 +105,9 @@ def test_with_statement(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_set_cooldown_time(monkeypatch: pytest.MonkeyPatch) -> None:
     cooldown_time1 = datetime.timedelta(seconds=1.0)
     cooldown_time2 = datetime.timedelta(seconds=2.0)
-    now, sleep, monotonic = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
+    now, sleep, monotonic = manual_clock(
+        datetime.datetime(2026, 1, 2, 3, 4, 5)
+    )
     monkeypatch.setattr("throttle_controller.simple.time.sleep", sleep)
     monkeypatch.setattr("throttle_controller.simple.time.monotonic", monotonic)
 
@@ -402,3 +409,28 @@ def test_wait_time_for_explicit_datetime_uses_wall_clock() -> None:
     throttle.record_use_time("a", base)
 
     assert throttle.wait_time_for("a") == datetime.timedelta(seconds=0.8)
+
+
+def test_record_use_time_emits_log(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    throttle = SimpleThrottleController(
+        default_cooldown_time=datetime.timedelta(seconds=1.0),
+    )
+    use_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+    with caplog.at_level(logging.DEBUG, logger="throttle_controller.simple"):
+        throttle.record_use_time("api-key", use_time)
+    assert any("api-key" in r.message for r in caplog.records)
+
+
+def test_wait_if_needed_emits_log(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    throttle = SimpleThrottleController(
+        default_cooldown_time=datetime.timedelta(seconds=0.0),
+    )
+    use_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+    throttle.record_use_time("api-key", use_time)
+    with caplog.at_level(logging.DEBUG, logger="throttle_controller.simple"):
+        throttle.wait_if_needed("api-key")
+    assert any("api-key" in r.message for r in caplog.records)
