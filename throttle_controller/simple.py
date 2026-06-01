@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import time
 from dataclasses import dataclass, field
 
 from .protocol import Key, ThrottleController
 from .utils.interval import Interval, interval_to_timedelta
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -29,6 +32,7 @@ class SimpleThrottleController(ThrottleController):
 
     def record_use_time(self, key: Key, use_time: datetime.datetime) -> None:
         self.last_use_times[key] = use_time
+        _logger.debug("recorded use of %r at %s", key, use_time.isoformat())
 
     def record_use_time_as_now(self, key: Key) -> None:
         self.record_use_time(key, datetime.datetime.now())
@@ -37,7 +41,9 @@ class SimpleThrottleController(ThrottleController):
         if not self._has_ever_used(key):
             return
         wait_time = self.wait_time_for(key)
-        time.sleep(wait_time.total_seconds())
+        seconds = wait_time.total_seconds()
+        _logger.debug("throttling %r: waiting %.3fs", key, seconds)
+        time.sleep(seconds)
 
     def wait_time_for(self, key: Key) -> datetime.timedelta:
         wait_time = self.next_available_time(key) - datetime.datetime.now()
