@@ -115,3 +115,23 @@ def test_clear() -> None:
     assert throttle.next_available_time("a") == datetime.datetime.min
     assert throttle.next_available_time("b") == datetime.datetime.min
     assert throttle.cooldown_time_for("a") == cooldown_time
+
+
+def test_wait_time_for_with_injected_now() -> None:
+    cooldown_time = datetime.timedelta(seconds=10.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
+
+    use_time = datetime.datetime(2020, 1, 1, 0, 0, 0)
+    throttle.record_use_time("a", use_time)
+
+    # 5 seconds after use: 5 seconds remain
+    now_mid = use_time + datetime.timedelta(seconds=5)
+    assert throttle.wait_time_for("a", now=now_mid) == datetime.timedelta(seconds=5)
+
+    # exactly at next available: 0 seconds remain
+    now_ready = use_time + datetime.timedelta(seconds=10)
+    assert throttle.wait_time_for("a", now=now_ready) == datetime.timedelta(seconds=0)
+
+    # past next available: clamped to 0
+    now_past = use_time + datetime.timedelta(seconds=15)
+    assert throttle.wait_time_for("a", now=now_past) == datetime.timedelta(seconds=0)

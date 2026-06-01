@@ -39,8 +39,14 @@ class SimpleThrottleController(ThrottleController):
         wait_time = self.wait_time_for(key)
         time.sleep(wait_time.total_seconds())
 
-    def wait_time_for(self, key: Key) -> datetime.timedelta:
-        wait_time = self.next_available_time(key) - datetime.datetime.now()
+    def wait_time_for(
+        self,
+        key: Key,
+        now: datetime.datetime | None = None,
+    ) -> datetime.timedelta:
+        if now is None:
+            now = datetime.datetime.now()
+        wait_time = self.next_available_time(key) - now
         return max(wait_time, datetime.timedelta(seconds=0))
 
     def next_available_time(self, key: Key) -> datetime.datetime:
