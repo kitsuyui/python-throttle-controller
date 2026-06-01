@@ -8,7 +8,11 @@ import pytest
 from throttle_controller import SimpleThrottleController
 
 
-Clock = tuple[Callable[[], datetime.datetime], Callable[[float], None]]
+Clock = tuple[
+    Callable[[], datetime.datetime],
+    Callable[[float], None],
+    Callable[[], float],
+]
 
 
 def thread_error(callback: Callable[[], object]) -> BaseException | None:
@@ -19,21 +23,28 @@ def thread_error(callback: Callable[[], object]) -> BaseException | None:
 
 def manual_clock(start: datetime.datetime) -> Clock:
     current_time = start
+    current_monotonic = 0.0
 
     def now() -> datetime.datetime:
         return current_time
 
     def sleep(seconds: float) -> None:
         nonlocal current_time
+        nonlocal current_monotonic
         current_time += datetime.timedelta(seconds=seconds)
+        current_monotonic += seconds
 
-    return now, sleep
+    def monotonic() -> float:
+        return current_monotonic
+
+    return now, sleep, monotonic
 
 
 def test_throttling(monkeypatch: pytest.MonkeyPatch) -> None:
     cooldown_time = datetime.timedelta(seconds=1.0)
-    now, sleep = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
+    now, sleep, monotonic = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
     monkeypatch.setattr("throttle_controller.simple.time.sleep", sleep)
+    monkeypatch.setattr("throttle_controller.simple.time.monotonic", monotonic)
     throttle = SimpleThrottleController(
         default_cooldown_time=cooldown_time,
         now=now,
@@ -66,8 +77,9 @@ def test_throttling(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_with_statement(monkeypatch: pytest.MonkeyPatch) -> None:
     cooldown_time = datetime.timedelta(seconds=1.0)
-    now, sleep = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
+    now, sleep, monotonic = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
     monkeypatch.setattr("throttle_controller.simple.time.sleep", sleep)
+    monkeypatch.setattr("throttle_controller.simple.time.monotonic", monotonic)
     throttle = SimpleThrottleController.create(
         default_cooldown_time=cooldown_time,
         now=now,
@@ -88,8 +100,9 @@ def test_with_statement(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_set_cooldown_time(monkeypatch: pytest.MonkeyPatch) -> None:
     cooldown_time1 = datetime.timedelta(seconds=1.0)
     cooldown_time2 = datetime.timedelta(seconds=2.0)
-    now, sleep = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
+    now, sleep, monotonic = manual_clock(datetime.datetime(2026, 1, 2, 3, 4, 5))
     monkeypatch.setattr("throttle_controller.simple.time.sleep", sleep)
+    monkeypatch.setattr("throttle_controller.simple.time.monotonic", monotonic)
 
     throttle = SimpleThrottleController(
         default_cooldown_time=cooldown_time1,
@@ -139,13 +152,20 @@ def test_injected_clock_records_current_time() -> None:
     assert throttle.next_available_time("a") == current_time + cooldown_time
 
 
-def test_injected_clock_controls_wait_time() -> None:
+def test_injected_clock_controls_wait_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     cooldown_time = datetime.timedelta(seconds=1.0)
     current_times = iter(
         [
             datetime.datetime(2026, 1, 2, 3, 4, 5),
             datetime.datetime(2026, 1, 2, 3, 4, 5, 250000),
         ],
+    )
+    monotonic_values = iter([1000.0, 1000.25])
+    monkeypatch.setattr(
+        "throttle_controller.simple.time.monotonic",
+        lambda: next(monotonic_values),
     )
     throttle = SimpleThrottleController.create(
         default_cooldown_time=cooldown_time,
@@ -204,7 +224,6 @@ def test_use_records_time_even_on_exception() -> None:
     except RuntimeError:
         pass
 
-    # The slot is consumed: next_available_time is in the future.
     assert throttle.next_available_time("a") > datetime.datetime.min
 
 
@@ -301,3 +320,34 @@ def test_wait_if_needed_returns_actual_wait_duration() -> None:
         result = throttle.wait_if_needed("a")
 
     assert result == datetime.timedelta(seconds=0.8)
+
+
+def test_wait_time_uses_monotonic_after_record_as_now(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cooldown = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(
+        default_cooldown_time=cooldown,
+        now=lambda: datetime.datetime(2026, 1, 2, 3, 4, 5),
+    )
+    monotonic = iter([1000.0, 1000.8])
+    monkeypatch.setattr(
+        "throttle_controller.simple.time.monotonic",
+        lambda: next(monotonic),
+    )
+
+    throttle.record_use_time_as_now("a")
+
+    assert throttle.wait_time_for("a") == datetime.timedelta(seconds=0.2)
+
+
+def test_wait_time_for_explicit_datetime_uses_wall_clock() -> None:
+    cooldown = datetime.timedelta(seconds=1.0)
+    base = datetime.datetime(2020, 1, 1)
+    throttle = SimpleThrottleController(
+        default_cooldown_time=cooldown,
+        now=lambda: base + datetime.timedelta(seconds=0.2),
+    )
+    throttle.record_use_time("a", base)
+
+    assert throttle.wait_time_for("a") == datetime.timedelta(seconds=0.8)
