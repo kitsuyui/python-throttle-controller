@@ -14,6 +14,11 @@ class SimpleThrottleController(ThrottleController):
     last_use_times: dict[Key, datetime.datetime] = field(default_factory=dict)
     cooldown_times: dict[Key, datetime.timedelta] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        self.default_cooldown_time = interval_to_timedelta(
+            self.default_cooldown_time,
+        )
+
     @classmethod
     def create(
         cls, *, default_cooldown_time: Interval,

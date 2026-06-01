@@ -1,6 +1,8 @@
 import datetime
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from throttle_controller import SimpleThrottleController
 
 
@@ -117,6 +119,34 @@ def test_set_cooldown_time() -> None:
     assert point2 == point1
     assert point3 - point2 == cooldown_time1
     assert point4 - point3 == cooldown_time2
+
+
+def test_create_rejects_negative_cooldown_time() -> None:
+    with pytest.raises(
+        ValueError,
+        match="cooldown interval must be non-negative",
+    ):
+        SimpleThrottleController.create(default_cooldown_time=-1)
+
+
+def test_direct_construction_rejects_negative_cooldown_time() -> None:
+    with pytest.raises(
+        ValueError,
+        match="cooldown interval must be non-negative",
+    ):
+        SimpleThrottleController(
+            default_cooldown_time=datetime.timedelta(seconds=-1),
+        )
+
+
+def test_set_cooldown_time_rejects_negative_cooldown_time() -> None:
+    throttle = SimpleThrottleController.create(default_cooldown_time=1)
+
+    with pytest.raises(
+        ValueError,
+        match="cooldown interval must be non-negative",
+    ):
+        throttle.set_cooldown_time("a", -1)
 
 
 def test_next_available_time() -> None:
