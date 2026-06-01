@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import time
 from dataclasses import dataclass, field
+from typing import Any
 
 from .protocol import Key, ThrottleController
 from .utils.interval import Interval, interval_to_timedelta
@@ -63,3 +64,40 @@ class SimpleThrottleController(ThrottleController):
     def clear(self) -> None:
         self.last_use_times.clear()
         self.cooldown_times.clear()
+
+    def to_dict(self) -> dict[str, Any]:
+        """Export controller state as a JSON-compatible dict.
+
+        Keys are converted to strings. Restore with from_dict() after
+        a process restart to preserve throttling history across restarts.
+        """
+        return {
+            "default_cooldown_time": (
+                self.default_cooldown_time.total_seconds()
+            ),
+            "last_use_times": {
+                str(k): v.isoformat() for k, v in self.last_use_times.items()
+            },
+            "cooldown_times": {
+                str(k): v.total_seconds()
+                for k, v in self.cooldown_times.items()
+            },
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SimpleThrottleController:
+        """Restore controller state from a dict produced by to_dict()."""
+        controller = cls(
+            default_cooldown_time=datetime.timedelta(
+                seconds=float(data["default_cooldown_time"]),
+            ),
+        )
+        controller.last_use_times = {
+            k: datetime.datetime.fromisoformat(v)
+            for k, v in data.get("last_use_times", {}).items()
+        }
+        controller.cooldown_times = {
+            k: datetime.timedelta(seconds=float(v))
+            for k, v in data.get("cooldown_times", {}).items()
+        }
+        return controller
