@@ -87,17 +87,18 @@ class SimpleThrottleController(ThrottleController):
         self._ensure_owner_thread()
         self.record_use_time(key, self.now())
 
-    def wait_if_needed(self, key: Key) -> None:
+    def wait_if_needed(self, key: Key) -> datetime.timedelta:
         """Sleep until *key*'s cooldown has elapsed.
 
         No-op when *key* has never been used.
         """
         self._ensure_owner_thread()
         if not self._has_ever_used(key):
-            return
+            return datetime.timedelta(0)
         wait_time = self.wait_time_for(key)
         self._enforce_max_wait(wait_time)
         time.sleep(wait_time.total_seconds())
+        return wait_time
 
     def _enforce_max_wait(self, wait_time: datetime.timedelta) -> None:
         if self.max_wait is not None and wait_time > self.max_wait:

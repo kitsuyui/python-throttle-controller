@@ -1,6 +1,7 @@
 import concurrent.futures
 import datetime
 from collections.abc import Callable
+from unittest.mock import patch
 
 import pytest
 
@@ -10,7 +11,7 @@ from throttle_controller import SimpleThrottleController
 Clock = tuple[Callable[[], datetime.datetime], Callable[[float], None]]
 
 
-def thread_error(callback: Callable[[], None]) -> BaseException | None:
+def thread_error(callback: Callable[[], object]) -> BaseException | None:
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(callback)
         return future.exception(timeout=1.0)
@@ -276,3 +277,27 @@ def test_max_wait_none_allows_unlimited_wait() -> None:
     assert throttle.max_wait is None
     throttle.record_use_time_as_now("a")
     throttle.wait_if_needed("a")
+
+
+def test_wait_if_needed_returns_zero_for_new_key() -> None:
+    throttle = SimpleThrottleController(
+        default_cooldown_time=datetime.timedelta(seconds=1.0),
+    )
+    result = throttle.wait_if_needed("unseen")
+    assert result == datetime.timedelta(0)
+
+
+def test_wait_if_needed_returns_actual_wait_duration() -> None:
+    cooldown = datetime.timedelta(seconds=1.0)
+    base = datetime.datetime(2020, 1, 1)
+    fake_now = base + datetime.timedelta(seconds=0.2)
+    throttle = SimpleThrottleController(
+        default_cooldown_time=cooldown,
+        now=lambda: fake_now,
+    )
+    throttle.record_use_time("a", base)
+
+    with patch("throttle_controller.simple.time.sleep"):
+        result = throttle.wait_if_needed("a")
+
+    assert result == datetime.timedelta(seconds=0.8)
