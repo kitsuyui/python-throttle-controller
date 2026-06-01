@@ -1,5 +1,7 @@
 import datetime
 
+import pytest
+
 from throttle_controller import SimpleThrottleController
 
 
@@ -82,3 +84,11 @@ def test_next_available_time() -> None:
     point = datetime.datetime.now()
     throttle.record_use_time_as_now("a")
     assert throttle.next_available_time("a") > point
+
+
+def test_record_use_time_rejects_tz_aware() -> None:
+    cooldown = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown)
+    aware = datetime.datetime.now(tz=datetime.timezone.utc)
+    with pytest.raises(ValueError, match="timezone-naive"):
+        throttle.record_use_time("a", aware)

@@ -16,7 +16,9 @@ class SimpleThrottleController(ThrottleController):
 
     @classmethod
     def create(
-        cls, *, default_cooldown_time: Interval,
+        cls,
+        *,
+        default_cooldown_time: Interval,
     ) -> SimpleThrottleController:
         return cls(
             default_cooldown_time=interval_to_timedelta(default_cooldown_time),
@@ -26,6 +28,11 @@ class SimpleThrottleController(ThrottleController):
         return self.cooldown_times.get(key, self.default_cooldown_time)
 
     def record_use_time(self, key: Key, use_time: datetime.datetime) -> None:
+        if use_time.tzinfo is not None:
+            raise ValueError(
+                f"record_use_time requires a timezone-naive datetime, "
+                f"got timezone-aware datetime with tzinfo={use_time.tzinfo!r}",
+            )
         self.last_use_times[key] = use_time
 
     def record_use_time_as_now(self, key: Key) -> None:
