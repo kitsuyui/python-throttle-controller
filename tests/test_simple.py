@@ -78,10 +78,12 @@ def test_set_cooldown_time() -> None:
 def test_next_available_time() -> None:
     cooldown_time = datetime.timedelta(seconds=1.0)
     throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
-    assert throttle.next_available_time("a") == datetime.datetime.min
+    assert throttle.next_available_time("a") is None
     point = datetime.datetime.now()
     throttle.record_use_time_as_now("a")
-    assert throttle.next_available_time("a") > point
+    next_time = throttle.next_available_time("a")
+    assert next_time is not None
+    assert next_time > point
 
 
 def test_evict() -> None:
@@ -89,11 +91,11 @@ def test_evict() -> None:
     throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
     throttle.record_use_time_as_now("a")
     throttle.set_cooldown_time("a", 2.0)
-    assert throttle.next_available_time("a") != datetime.datetime.min
+    assert throttle.next_available_time("a") is not None
 
     throttle.evict("a")
 
-    assert throttle.next_available_time("a") == datetime.datetime.min
+    assert throttle.next_available_time("a") is None
     assert throttle.cooldown_time_for("a") == cooldown_time
 
 
@@ -112,6 +114,6 @@ def test_clear() -> None:
 
     throttle.clear()
 
-    assert throttle.next_available_time("a") == datetime.datetime.min
-    assert throttle.next_available_time("b") == datetime.datetime.min
+    assert throttle.next_available_time("a") is None
+    assert throttle.next_available_time("b") is None
     assert throttle.cooldown_time_for("a") == cooldown_time
