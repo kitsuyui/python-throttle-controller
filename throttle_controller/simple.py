@@ -49,12 +49,13 @@ class SimpleThrottleController(ThrottleController):
         self._ensure_owner_thread()
         self.record_use_time(key, self.now())
 
-    def wait_if_needed(self, key: Key) -> None:
+    def wait_if_needed(self, key: Key) -> datetime.timedelta:
         self._ensure_owner_thread()
         if not self._has_ever_used(key):
-            return
+            return datetime.timedelta(0)
         wait_time = self.wait_time_for(key)
         time.sleep(wait_time.total_seconds())
+        return wait_time
 
     def wait_time_for(self, key: Key) -> datetime.timedelta:
         self._ensure_owner_thread()
