@@ -1,3 +1,4 @@
+import concurrent.futures
 import datetime
 from collections.abc import Callable
 
@@ -6,6 +7,12 @@ from throttle_controller import SimpleThrottleController
 
 
 Clock = tuple[Callable[[], datetime.datetime], Callable[[float], None]]
+
+
+def thread_error(callback: Callable[[], None]) -> BaseException | None:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(callback)
+        return future.exception(timeout=1.0)
 
 
 def manual_clock(start: datetime.datetime) -> Clock:
@@ -148,3 +155,31 @@ def test_injected_clock_controls_wait_time() -> None:
     assert throttle.wait_time_for("a") == datetime.timedelta(
         microseconds=750000,
     )
+
+
+def test_cross_thread_use_raises_runtime_error() -> None:
+    throttle = SimpleThrottleController.create(default_cooldown_time=1.0)
+    error = thread_error(lambda: throttle.wait_if_needed("a"))
+
+    assert isinstance(error, RuntimeError)
+    assert "single-thread use" in str(error)
+
+
+def test_cross_thread_record_as_now_does_not_call_clock() -> None:
+    clock_calls = 0
+
+    def now() -> datetime.datetime:
+        nonlocal clock_calls
+        clock_calls += 1
+        return datetime.datetime(2026, 1, 2, 3, 4, 5)
+
+    throttle = SimpleThrottleController.create(
+        default_cooldown_time=1.0,
+        now=now,
+    )
+
+    error = thread_error(lambda: throttle.record_use_time_as_now("a"))
+
+    assert isinstance(error, RuntimeError)
+    assert clock_calls == 0
+    assert "a" not in throttle.last_use_times
