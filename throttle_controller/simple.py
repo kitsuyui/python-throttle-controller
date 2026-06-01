@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from .protocol import Key, ThrottleController
@@ -13,13 +14,21 @@ class SimpleThrottleController(ThrottleController):
     default_cooldown_time: datetime.timedelta
     last_use_times: dict[Key, datetime.datetime] = field(default_factory=dict)
     cooldown_times: dict[Key, datetime.timedelta] = field(default_factory=dict)
+    now: Callable[[], datetime.datetime] = field(
+        default=datetime.datetime.now,
+        repr=False,
+    )
 
     @classmethod
     def create(
-        cls, *, default_cooldown_time: Interval,
+        cls,
+        *,
+        default_cooldown_time: Interval,
+        now: Callable[[], datetime.datetime] = datetime.datetime.now,
     ) -> SimpleThrottleController:
         return cls(
             default_cooldown_time=interval_to_timedelta(default_cooldown_time),
+            now=now,
         )
 
     def cooldown_time_for(self, key: Key) -> datetime.timedelta:
@@ -29,7 +38,7 @@ class SimpleThrottleController(ThrottleController):
         self.last_use_times[key] = use_time
 
     def record_use_time_as_now(self, key: Key) -> None:
-        self.record_use_time(key, datetime.datetime.now())
+        self.record_use_time(key, self.now())
 
     def wait_if_needed(self, key: Key) -> None:
         if not self._has_ever_used(key):
@@ -38,7 +47,7 @@ class SimpleThrottleController(ThrottleController):
         time.sleep(wait_time.total_seconds())
 
     def wait_time_for(self, key: Key) -> datetime.timedelta:
-        wait_time = self.next_available_time(key) - datetime.datetime.now()
+        wait_time = self.next_available_time(key) - self.now()
         return max(wait_time, datetime.timedelta(seconds=0))
 
     def next_available_time(self, key: Key) -> datetime.datetime:
