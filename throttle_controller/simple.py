@@ -16,7 +16,9 @@ class SimpleThrottleController(ThrottleController):
 
     @classmethod
     def create(
-        cls, *, default_cooldown_time: Interval,
+        cls,
+        *,
+        default_cooldown_time: Interval,
     ) -> SimpleThrottleController:
         return cls(
             default_cooldown_time=interval_to_timedelta(default_cooldown_time),
