@@ -60,3 +60,11 @@ class SimpleThrottleController(ThrottleController):
 
     def set_cooldown_time(self, key: Key, cooldown_time: Interval) -> None:
         self.cooldown_times[key] = interval_to_timedelta(cooldown_time)
+
+    def evict(self, key: Key) -> None:
+        self.last_use_times.pop(key, None)
+        self.cooldown_times.pop(key, None)
+
+    def clear(self) -> None:
+        self.last_use_times.clear()
+        self.cooldown_times.clear()

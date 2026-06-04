@@ -92,3 +92,36 @@ def test_record_use_time_rejects_tz_aware() -> None:
     aware = datetime.datetime.now(tz=datetime.timezone.utc)
     with pytest.raises(ValueError, match="timezone-naive"):
         throttle.record_use_time("a", aware)
+
+
+def test_evict() -> None:
+    cooldown_time = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
+    throttle.record_use_time_as_now("a")
+    throttle.set_cooldown_time("a", 2.0)
+    assert throttle.next_available_time("a") != datetime.datetime.min
+
+    throttle.evict("a")
+
+    assert throttle.next_available_time("a") == datetime.datetime.min
+    assert throttle.cooldown_time_for("a") == cooldown_time
+
+
+def test_evict_unknown_key() -> None:
+    cooldown_time = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
+    throttle.evict("nonexistent")
+
+
+def test_clear() -> None:
+    cooldown_time = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
+    throttle.record_use_time_as_now("a")
+    throttle.record_use_time_as_now("b")
+    throttle.set_cooldown_time("a", 2.0)
+
+    throttle.clear()
+
+    assert throttle.next_available_time("a") == datetime.datetime.min
+    assert throttle.next_available_time("b") == datetime.datetime.min
+    assert throttle.cooldown_time_for("a") == cooldown_time
