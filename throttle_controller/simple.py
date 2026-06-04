@@ -13,6 +13,9 @@ class SimpleThrottleController(ThrottleController):
     default_cooldown_time: datetime.timedelta
     last_use_times: dict[Key, datetime.datetime] = field(default_factory=dict)
     cooldown_times: dict[Key, datetime.timedelta] = field(default_factory=dict)
+    _last_monotonic_times: dict[Key, float] = field(
+        default_factory=dict, init=False, repr=False, compare=False,
+    )
 
     @classmethod
     def create(
@@ -32,6 +35,7 @@ class SimpleThrottleController(ThrottleController):
 
     def record_use_time_as_now(self, key: Key) -> None:
         self.record_use_time(key, datetime.datetime.now())
+        self._last_monotonic_times[key] = time.monotonic()
 
     def wait_if_needed(self, key: Key) -> None:
         if not self._has_ever_used(key):
@@ -40,8 +44,16 @@ class SimpleThrottleController(ThrottleController):
         time.sleep(wait_time.total_seconds())
 
     def wait_time_for(self, key: Key) -> datetime.timedelta:
+        if key in self._last_monotonic_times:
+            return datetime.timedelta(
+                seconds=self._monotonic_seconds_remaining(key),
+            )
         wait_time = self.next_available_time(key) - datetime.datetime.now()
         return max(wait_time, datetime.timedelta(seconds=0))
+
+    def _monotonic_seconds_remaining(self, key: Key) -> float:
+        elapsed = time.monotonic() - self._last_monotonic_times[key]
+        return max(self.cooldown_time_for(key).total_seconds() - elapsed, 0.0)
 
     def next_available_time(self, key: Key) -> datetime.datetime:
         if not self._has_ever_used(key):

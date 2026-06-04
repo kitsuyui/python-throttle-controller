@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import MagicMock, patch
 
 from throttle_controller import SimpleThrottleController
 
@@ -115,3 +116,38 @@ def test_clear() -> None:
     assert throttle.next_available_time("a") == datetime.datetime.min
     assert throttle.next_available_time("b") == datetime.datetime.min
     assert throttle.cooldown_time_for("a") == cooldown_time
+
+
+def test_wait_time_uses_monotonic_after_record_as_now() -> None:
+    cooldown = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown)
+
+    with patch("throttle_controller.simple.time") as mock_time:
+        mock_time.monotonic.return_value = 1000.0
+        mock_time.sleep = MagicMock()
+        throttle.record_use_time_as_now("a")
+
+        mock_time.monotonic.return_value = 1000.8
+        result = throttle.wait_time_for("a")
+
+    assert result == datetime.timedelta(seconds=0.2)
+
+
+def test_wait_time_for_explicit_datetime_uses_wall_clock() -> None:
+    cooldown = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown)
+    base = datetime.datetime(2020, 1, 1)
+    throttle.record_use_time("a", base)
+
+    fake_now = base + datetime.timedelta(seconds=0.2)
+    fake_dt = MagicMock()
+    fake_dt.datetime.now.return_value = fake_now
+    fake_dt.datetime.min = datetime.datetime.min
+    fake_dt.timedelta = datetime.timedelta
+
+    with patch("throttle_controller.simple.datetime", fake_dt), patch(
+        "throttle_controller.simple.time"
+    ):
+        result = throttle.wait_time_for("a")
+
+    assert result == datetime.timedelta(seconds=0.8)
