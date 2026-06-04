@@ -58,6 +58,3 @@ jobs:
 
       - name: Test
         run: uv run poe test
-
-      - name: Coverage
-        run: uv run poe coverage-xml
