@@ -35,6 +35,14 @@ for _ in range(10):
         requests.get("http://example.com/path/to/api")
 ```
 
+## Stability
+
+This package is currently in **Alpha** (`Development Status :: 3 - Alpha`).
+
+- Breaking changes may occur between minor versions while in Alpha.
+- The package will be considered for Beta promotion when thread-safe and multi-process support is implemented.
+- A stable (1.0) release is planned after Beta validation.
+
 # Caution
 
 Currently this package supports only to use in single thread / single process use-cases.
