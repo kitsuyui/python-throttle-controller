@@ -76,6 +76,16 @@ class SimpleThrottleController(ThrottleController):
         self._ensure_owner_thread()
         self.cooldown_times[key] = interval_to_timedelta(cooldown_time)
 
+    def evict(self, key: Key) -> None:
+        self._ensure_owner_thread()
+        self.last_use_times.pop(key, None)
+        self.cooldown_times.pop(key, None)
+
+    def clear(self) -> None:
+        self._ensure_owner_thread()
+        self.last_use_times.clear()
+        self.cooldown_times.clear()
+
     def _ensure_owner_thread(self) -> None:
         current_thread_id = threading.get_ident()
         self._raise_if_wrong_thread(current_thread_id, self._owner_thread_id)
