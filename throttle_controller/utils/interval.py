@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import datetime
 
-Interval = datetime.timedelta | float | int
+IntervalSeconds = float | int
+Interval = datetime.timedelta | IntervalSeconds
 
 
 def interval_to_timedelta(interval: Interval | None) -> datetime.timedelta:
