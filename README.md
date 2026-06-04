@@ -53,6 +53,7 @@ throttle = SimpleThrottleController.create(
 # Caution
 
 Currently this package supports only to use in single thread / single process use-cases.
+Reusing the same controller instance from multiple threads raises `RuntimeError`.
 
 # LICENSE
 
