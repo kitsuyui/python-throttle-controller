@@ -10,7 +10,9 @@ class ThrottleController(Protocol):  # pragma: no cover
     def cooldown_time_for(self, key: Key) -> datetime.timedelta: ...
 
     def record_use_time(
-        self, key: Key, use_time: datetime.datetime,
+        self,
+        key: Key,
+        use_time: datetime.datetime,
     ) -> None: ...
 
     def record_use_time_as_now(self, key: Key) -> None: ...
