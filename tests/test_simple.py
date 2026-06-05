@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from throttle_controller import SimpleThrottleController
+from throttle_controller import SimpleThrottleController, ThrottleController
 
 
 def _make_fake_clock(
@@ -147,6 +147,16 @@ def test_set_cooldown_time_rejects_negative_cooldown_time() -> None:
         match="cooldown interval must be non-negative",
     ):
         throttle.set_cooldown_time("a", -1)
+
+
+def test_protocol_exposes_set_cooldown_time() -> None:
+    throttle: ThrottleController = SimpleThrottleController.create(
+        default_cooldown_time=1.0,
+    )
+
+    throttle.set_cooldown_time("a", 2.0)
+
+    assert throttle.cooldown_time_for("a") == datetime.timedelta(seconds=2.0)
 
 
 def test_next_available_time() -> None:

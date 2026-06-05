@@ -3,11 +3,15 @@ import datetime
 from collections.abc import Generator, Hashable
 from typing import Protocol  # pragma: no cover
 
+from .utils.interval import Interval
+
 Key = Hashable
 
 
 class ThrottleController(Protocol):  # pragma: no cover
     def cooldown_time_for(self, key: Key) -> datetime.timedelta: ...
+
+    def set_cooldown_time(self, key: Key, cooldown_time: Interval) -> None: ...
 
     def record_use_time(
         self,
