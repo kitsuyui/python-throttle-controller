@@ -185,6 +185,27 @@ def test_cross_thread_record_as_now_does_not_call_clock() -> None:
     assert "a" not in throttle.last_use_times
 
 
+def test_use_records_time_even_on_exception() -> None:
+    """A body that raises still consumes the cooldown slot.
+
+    ``use()`` records the use time *before* yielding control, so the
+    throttle state is updated regardless of whether the body succeeds.
+    """
+    cooldown_time = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
+
+    assert throttle.next_available_time("a") == datetime.datetime.min
+
+    try:
+        with throttle.use("a"):
+            raise RuntimeError("simulated failure")
+    except RuntimeError:
+        pass
+
+    # The slot is consumed: next_available_time is in the future.
+    assert throttle.next_available_time("a") > datetime.datetime.min
+
+
 def test_evict() -> None:
     cooldown_time = datetime.timedelta(seconds=1.0)
     throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
