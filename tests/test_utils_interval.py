@@ -1,6 +1,8 @@
 import datetime
 
-from throttle_controller.utils.interval import interval_to_timedelta
+import pytest
+
+from throttle_controller.utils.interval import IntervalSeconds, interval_to_timedelta
 
 
 def test_interval_to_timedelta() -> None:
@@ -10,3 +12,22 @@ def test_interval_to_timedelta() -> None:
     assert interval_to_timedelta(
         datetime.timedelta(seconds=1),
     ) == datetime.timedelta(seconds=1)
+
+
+def test_interval_seconds_type_is_float_or_int() -> None:
+    seconds: IntervalSeconds = 2.5
+    assert interval_to_timedelta(seconds) == datetime.timedelta(seconds=2.5)
+    whole: IntervalSeconds = 3
+    assert interval_to_timedelta(whole) == datetime.timedelta(seconds=3)
+
+
+def test_interval_to_timedelta_rejects_inf() -> None:
+    with pytest.raises(ValueError, match="finite"):
+        interval_to_timedelta(float("inf"))
+    with pytest.raises(ValueError, match="finite"):
+        interval_to_timedelta(float("-inf"))
+
+
+def test_interval_to_timedelta_rejects_nan() -> None:
+    with pytest.raises(ValueError, match="finite"):
+        interval_to_timedelta(float("nan"))
