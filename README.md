@@ -35,6 +35,21 @@ for _ in range(10):
         requests.get("http://example.com/path/to/api")
 ```
 
+### Deterministic clock for tests
+
+Pass `now` when you need deterministic tests or replayable behavior:
+
+```python
+import datetime
+from throttle_controller import SimpleThrottleController
+
+fixed_time = datetime.datetime(2026, 1, 2, 3, 4, 5)
+throttle = SimpleThrottleController.create(
+    default_cooldown_time=3.0,
+    now=lambda: fixed_time,
+)
+```
+
 ## Stability
 
 This package is currently in **Alpha** (`Development Status :: 3 - Alpha`).
@@ -46,6 +61,7 @@ This package is currently in **Alpha** (`Development Status :: 3 - Alpha`).
 # Caution
 
 Currently this package supports only to use in single thread / single process use-cases.
+Reusing the same controller instance from multiple threads raises `RuntimeError`.
 
 # LICENSE
 
