@@ -63,13 +63,16 @@ class SimpleThrottleController(ThrottleController):
 
     def wait_time_for(self, key: Key) -> datetime.timedelta:
         self._ensure_owner_thread()
-        wait_time = self.next_available_time(key) - self.now()
+        next_time = self.next_available_time(key)
+        if next_time is None:
+            return datetime.timedelta(seconds=0)
+        wait_time = next_time - self.now()
         return max(wait_time, datetime.timedelta(seconds=0))
 
-    def next_available_time(self, key: Key) -> datetime.datetime:
+    def next_available_time(self, key: Key) -> datetime.datetime | None:
         self._ensure_owner_thread()
         if not self._has_ever_used(key):
-            return datetime.datetime.min
+            return None
 
         interval = self.cooldown_time_for(key)
         return self.last_use_times[key] + interval
