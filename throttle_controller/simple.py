@@ -43,6 +43,11 @@ class SimpleThrottleController(ThrottleController):
 
     def record_use_time(self, key: Key, use_time: datetime.datetime) -> None:
         self._ensure_owner_thread()
+        if use_time.tzinfo is not None:
+            raise ValueError(
+                f"record_use_time requires a timezone-naive datetime, "
+                f"got timezone-aware datetime with tzinfo={use_time.tzinfo!r}",
+            )
         self.last_use_times[key] = use_time
 
     def record_use_time_as_now(self, key: Key) -> None:
