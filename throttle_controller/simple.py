@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import threading
 import time
 from collections.abc import Callable
@@ -8,6 +9,8 @@ from dataclasses import dataclass, field
 
 from .protocol import Key, ThrottleController
 from .utils.interval import Interval, interval_to_timedelta
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -72,6 +75,7 @@ class SimpleThrottleController(ThrottleController):
                 f"got timezone-aware datetime with tzinfo={use_time.tzinfo!r}",
             )
         self.last_use_times[key] = use_time
+        _logger.debug("recorded use of %r at %s", key, use_time.isoformat())
 
     def record_use_time_as_now(self, key: Key) -> None:
         """Record that *key* was used at the current time.
@@ -91,7 +95,9 @@ class SimpleThrottleController(ThrottleController):
         if not self._has_ever_used(key):
             return
         wait_time = self.wait_time_for(key)
-        time.sleep(wait_time.total_seconds())
+        seconds = wait_time.total_seconds()
+        _logger.debug("throttling %r: waiting %.3fs", key, seconds)
+        time.sleep(seconds)
 
     def wait_time_for(self, key: Key) -> datetime.timedelta:
         """Return the remaining cooldown for *key*, or zero if ready."""

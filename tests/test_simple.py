@@ -1,5 +1,6 @@
 import concurrent.futures
 import datetime
+import logging
 from collections.abc import Callable
 
 import pytest
@@ -246,3 +247,28 @@ def test_clear() -> None:
     assert throttle.next_available_time("a") == datetime.datetime.min
     assert throttle.next_available_time("b") == datetime.datetime.min
     assert throttle.cooldown_time_for("a") == cooldown_time
+
+
+def test_record_use_time_emits_log(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    throttle = SimpleThrottleController(
+        default_cooldown_time=datetime.timedelta(seconds=1.0),
+    )
+    use_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+    with caplog.at_level(logging.DEBUG, logger="throttle_controller.simple"):
+        throttle.record_use_time("api-key", use_time)
+    assert any("api-key" in r.message for r in caplog.records)
+
+
+def test_wait_if_needed_emits_log(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    throttle = SimpleThrottleController(
+        default_cooldown_time=datetime.timedelta(seconds=0.0),
+    )
+    use_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+    throttle.record_use_time("api-key", use_time)
+    with caplog.at_level(logging.DEBUG, logger="throttle_controller.simple"):
+        throttle.wait_if_needed("api-key")
+    assert any("api-key" in r.message for r in caplog.records)
