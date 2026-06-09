@@ -246,3 +246,54 @@ def test_clear() -> None:
     assert throttle.next_available_time("a") == datetime.datetime.min
     assert throttle.next_available_time("b") == datetime.datetime.min
     assert throttle.cooldown_time_for("a") == cooldown_time
+
+
+def test_to_dict_from_dict_round_trip() -> None:
+    cooldown_time = datetime.timedelta(seconds=5.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
+    use_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+    throttle.record_use_time("api", use_time)
+    throttle.set_cooldown_time("api", 10.0)
+
+    data = throttle.to_dict()
+    restored = SimpleThrottleController.from_dict(data)
+
+    assert restored.default_cooldown_time == cooldown_time
+    assert restored.last_use_times == {"api": use_time}
+    assert restored.cooldown_times == {"api": datetime.timedelta(seconds=10.0)}
+    assert restored.next_available_time("api") == throttle.next_available_time(
+        "api",
+    )
+
+
+def test_to_dict_empty_state() -> None:
+    cooldown_time = datetime.timedelta(seconds=3.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
+    data = throttle.to_dict()
+
+    assert data["default_cooldown_time"] == 3.0
+    assert data["last_use_times"] == {}
+    assert data["cooldown_times"] == {}
+
+    restored = SimpleThrottleController.from_dict(data)
+    assert restored.default_cooldown_time == cooldown_time
+    assert restored.last_use_times == {}
+    assert restored.cooldown_times == {}
+
+
+def test_to_dict_json_compatible() -> None:
+    import json
+
+    cooldown_time = datetime.timedelta(seconds=2.0)
+    throttle = SimpleThrottleController(default_cooldown_time=cooldown_time)
+    throttle.record_use_time("key1", datetime.datetime(2026, 6, 1, 0, 0, 0))
+
+    data = throttle.to_dict()
+    serialized = json.dumps(data)
+    deserialized = json.loads(serialized)
+    restored = SimpleThrottleController.from_dict(deserialized)
+
+    assert restored.default_cooldown_time == cooldown_time
+    assert restored.last_use_times == {
+        "key1": datetime.datetime(2026, 6, 1, 0, 0, 0),
+    }
