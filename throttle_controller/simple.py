@@ -12,6 +12,17 @@ from .utils.interval import Interval, interval_to_timedelta
 
 @dataclass
 class SimpleThrottleController(ThrottleController):
+    """In-memory throttle controller with per-key cooldown tracking.
+
+    Tracks the last-use time for each key and enforces a minimum interval
+    (cooldown) between consecutive uses.  The default cooldown applies when
+    no per-key override has been set via :meth:`set_cooldown_time`.
+
+    Create via the factory method::
+
+        ctrl = SimpleThrottleController.create(default_cooldown_time=1.0)
+    """
+
     default_cooldown_time: datetime.timedelta
     last_use_times: dict[Key, datetime.datetime] = field(default_factory=dict)
     cooldown_times: dict[Key, datetime.timedelta] = field(default_factory=dict)
@@ -32,16 +43,28 @@ class SimpleThrottleController(ThrottleController):
         default_cooldown_time: Interval,
         now: Callable[[], datetime.datetime] = datetime.datetime.now,
     ) -> SimpleThrottleController:
+        """Create a controller with the given default cooldown.
+
+        Args:
+            default_cooldown_time: Cooldown as a :class:`~datetime.timedelta`,
+                float seconds, or int seconds.
+        """
         return cls(
             default_cooldown_time=interval_to_timedelta(default_cooldown_time),
             now=now,
         )
 
     def cooldown_time_for(self, key: Key) -> datetime.timedelta:
+        """Return the effective cooldown duration for *key*.
+
+        Returns the per-key override if one has been set via
+        :meth:`set_cooldown_time`, otherwise the default cooldown.
+        """
         self._ensure_owner_thread()
         return self.cooldown_times.get(key, self.default_cooldown_time)
 
     def record_use_time(self, key: Key, use_time: datetime.datetime) -> None:
+        """Record that *key* was used at *use_time*."""
         self._ensure_owner_thread()
         if use_time.tzinfo is not None:
             raise ValueError(
@@ -51,10 +74,19 @@ class SimpleThrottleController(ThrottleController):
         self.last_use_times[key] = use_time
 
     def record_use_time_as_now(self, key: Key) -> None:
+        """Record that *key* was used at the current time.
+
+        The current time is obtained from the injected ``now`` callable
+        (the wall clock by default).
+        """
         self._ensure_owner_thread()
         self.record_use_time(key, self.now())
 
     def wait_if_needed(self, key: Key) -> None:
+        """Sleep until *key*'s cooldown has elapsed.
+
+        No-op when *key* has never been used.
+        """
         self._ensure_owner_thread()
         if not self._has_ever_used(key):
             return
@@ -62,11 +94,16 @@ class SimpleThrottleController(ThrottleController):
         time.sleep(wait_time.total_seconds())
 
     def wait_time_for(self, key: Key) -> datetime.timedelta:
+        """Return the remaining cooldown for *key*, or zero if ready."""
         self._ensure_owner_thread()
         wait_time = self.next_available_time(key) - self.now()
         return max(wait_time, datetime.timedelta(seconds=0))
 
     def next_available_time(self, key: Key) -> datetime.datetime:
+        """Return the earliest time at which *key* may be used again.
+
+        Returns :attr:`~datetime.datetime.min` when *key* has never been used.
+        """
         self._ensure_owner_thread()
         if not self._has_ever_used(key):
             return datetime.datetime.min
@@ -78,6 +115,13 @@ class SimpleThrottleController(ThrottleController):
         return key in self.last_use_times
 
     def set_cooldown_time(self, key: Key, cooldown_time: Interval) -> None:
+        """Set a per-key cooldown override.
+
+        Args:
+            key: The throttle key to configure.
+            cooldown_time: New cooldown as a :class:`~datetime.timedelta`,
+                float seconds, or int seconds.
+        """
         self._ensure_owner_thread()
         self.cooldown_times[key] = interval_to_timedelta(cooldown_time)
 
