@@ -246,3 +246,33 @@ def test_clear() -> None:
     assert throttle.next_available_time("a") == datetime.datetime.min
     assert throttle.next_available_time("b") == datetime.datetime.min
     assert throttle.cooldown_time_for("a") == cooldown_time
+
+
+def test_max_wait_raises_timeout_error() -> None:
+    cooldown = datetime.timedelta(seconds=10.0)
+    max_wait = datetime.timedelta(seconds=1.0)
+    throttle = SimpleThrottleController(
+        default_cooldown_time=cooldown,
+        max_wait=max_wait,
+    )
+    past = datetime.datetime.now() - datetime.timedelta(seconds=5.0)
+    throttle.record_use_time("a", past)
+    with pytest.raises(TimeoutError):
+        throttle.wait_if_needed("a")
+
+
+def test_max_wait_via_create() -> None:
+    throttle = SimpleThrottleController.create(
+        default_cooldown_time=10.0,
+        max_wait=1.0,
+    )
+    assert throttle.max_wait == datetime.timedelta(seconds=1.0)
+
+
+def test_max_wait_none_allows_unlimited_wait() -> None:
+    throttle = SimpleThrottleController(
+        default_cooldown_time=datetime.timedelta(seconds=0.0),
+    )
+    assert throttle.max_wait is None
+    throttle.record_use_time_as_now("a")
+    throttle.wait_if_needed("a")

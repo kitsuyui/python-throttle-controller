@@ -26,6 +26,7 @@ class SimpleThrottleController(ThrottleController):
     default_cooldown_time: datetime.timedelta
     last_use_times: dict[Key, datetime.datetime] = field(default_factory=dict)
     cooldown_times: dict[Key, datetime.timedelta] = field(default_factory=dict)
+    max_wait: datetime.timedelta | None = None
     now: Callable[[], datetime.datetime] = field(
         default=datetime.datetime.now,
         repr=False,
@@ -41,6 +42,7 @@ class SimpleThrottleController(ThrottleController):
         cls,
         *,
         default_cooldown_time: Interval,
+        max_wait: Interval | None = None,
         now: Callable[[], datetime.datetime] = datetime.datetime.now,
     ) -> SimpleThrottleController:
         """Create a controller with the given default cooldown.
@@ -51,6 +53,9 @@ class SimpleThrottleController(ThrottleController):
         """
         return cls(
             default_cooldown_time=interval_to_timedelta(default_cooldown_time),
+            max_wait=interval_to_timedelta(max_wait)
+            if max_wait is not None
+            else None,
             now=now,
         )
 
@@ -91,7 +96,14 @@ class SimpleThrottleController(ThrottleController):
         if not self._has_ever_used(key):
             return
         wait_time = self.wait_time_for(key)
+        self._enforce_max_wait(wait_time)
         time.sleep(wait_time.total_seconds())
+
+    def _enforce_max_wait(self, wait_time: datetime.timedelta) -> None:
+        if self.max_wait is not None and wait_time > self.max_wait:
+            raise TimeoutError(
+                f"wait time {wait_time} exceeds max_wait {self.max_wait}",
+            )
 
     def wait_time_for(self, key: Key) -> datetime.timedelta:
         """Return the remaining cooldown for *key*, or zero if ready."""
