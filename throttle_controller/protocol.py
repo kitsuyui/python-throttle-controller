@@ -29,7 +29,7 @@ class ThrottleController(Protocol):  # pragma: no cover
         """Record that *key* was used at the current wall-clock time."""
         ...
 
-    def wait_if_needed(self, key: Key) -> None:
+    def wait_if_needed(self, key: Key) -> datetime.timedelta:
         """Block until *key* is no longer in cooldown."""
         ...
 
