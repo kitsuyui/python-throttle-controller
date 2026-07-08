@@ -36,6 +36,12 @@ class SimpleThrottleController(ThrottleController):
         init=False,
         repr=False,
     )
+    _last_monotonic_times: dict[Key, float] = field(
+        default_factory=dict,
+        init=False,
+        repr=False,
+        compare=False,
+    )
 
     @classmethod
     def create(
@@ -77,15 +83,16 @@ class SimpleThrottleController(ThrottleController):
                 f"got timezone-aware datetime with tzinfo={use_time.tzinfo!r}",
             )
         self.last_use_times[key] = use_time
+        self._last_monotonic_times.pop(key, None)
 
     def record_use_time_as_now(self, key: Key) -> None:
         """Record that *key* was used at the current time.
 
-        The current time is obtained from the injected ``now`` callable
-        (the wall clock by default).
+        The wall clock comes from the injected ``now`` callable.
         """
         self._ensure_owner_thread()
         self.record_use_time(key, self.now())
+        self._last_monotonic_times[key] = time.monotonic()
 
     def wait_if_needed(self, key: Key) -> datetime.timedelta:
         """Sleep until *key*'s cooldown has elapsed.
@@ -109,8 +116,16 @@ class SimpleThrottleController(ThrottleController):
     def wait_time_for(self, key: Key) -> datetime.timedelta:
         """Return the remaining cooldown for *key*, or zero if ready."""
         self._ensure_owner_thread()
+        if key in self._last_monotonic_times:
+            return datetime.timedelta(
+                seconds=self._monotonic_seconds_remaining(key),
+            )
         wait_time = self.next_available_time(key) - self.now()
         return max(wait_time, datetime.timedelta(seconds=0))
+
+    def _monotonic_seconds_remaining(self, key: Key) -> float:
+        elapsed = time.monotonic() - self._last_monotonic_times[key]
+        return max(self.cooldown_time_for(key).total_seconds() - elapsed, 0.0)
 
     def next_available_time(self, key: Key) -> datetime.datetime:
         """Return the earliest time at which *key* may be used again.
@@ -142,11 +157,13 @@ class SimpleThrottleController(ThrottleController):
         self._ensure_owner_thread()
         self.last_use_times.pop(key, None)
         self.cooldown_times.pop(key, None)
+        self._last_monotonic_times.pop(key, None)
 
     def clear(self) -> None:
         self._ensure_owner_thread()
         self.last_use_times.clear()
         self.cooldown_times.clear()
+        self._last_monotonic_times.clear()
 
     def _ensure_owner_thread(self) -> None:
         current_thread_id = threading.get_ident()
