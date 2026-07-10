@@ -145,6 +145,12 @@ def test_next_available_time() -> None:
     assert throttle.next_available_time("a") == current_time + cooldown_time
 
 
+def test_wait_time_for_unused_key_is_zero() -> None:
+    throttle = SimpleThrottleController.create(default_cooldown_time=1.0)
+
+    assert throttle.wait_time_for("a") == datetime.timedelta(0)
+
+
 def test_injected_clock_records_current_time() -> None:
     cooldown_time = datetime.timedelta(seconds=1.0)
     current_time = datetime.datetime(2026, 1, 2, 3, 4, 5)
