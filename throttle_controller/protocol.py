@@ -37,7 +37,7 @@ class ThrottleController(Protocol):  # pragma: no cover
         """Return the remaining cooldown duration for *key* (≥ 0)."""
         ...
 
-    def next_available_time(self, key: Key) -> datetime.datetime:
+    def next_available_time(self, key: Key) -> datetime.datetime | None:
         """Return the earliest datetime at which *key* may be used again."""
         ...
 

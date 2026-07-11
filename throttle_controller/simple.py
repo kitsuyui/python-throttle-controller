@@ -127,21 +127,27 @@ class SimpleThrottleController(ThrottleController):
             return datetime.timedelta(
                 seconds=self._monotonic_seconds_remaining(key),
             )
-        wait_time = self.next_available_time(key) - self.now()
-        return max(wait_time, datetime.timedelta(seconds=0))
+        return self._wall_clock_wait_time(key)
 
     def _monotonic_seconds_remaining(self, key: Key) -> float:
         elapsed = time.monotonic() - self._last_monotonic_times[key]
         return max(self.cooldown_time_for(key).total_seconds() - elapsed, 0.0)
 
-    def next_available_time(self, key: Key) -> datetime.datetime:
+    def _wall_clock_wait_time(self, key: Key) -> datetime.timedelta:
+        next_time = self.next_available_time(key)
+        if next_time is None:
+            return datetime.timedelta(seconds=0)
+        wait_time = next_time - self.now()
+        return max(wait_time, datetime.timedelta(seconds=0))
+
+    def next_available_time(self, key: Key) -> datetime.datetime | None:
         """Return the earliest time at which *key* may be used again.
 
-        Returns :attr:`~datetime.datetime.min` when *key* has never been used.
+        Returns ``None`` when *key* has never been used.
         """
         self._ensure_owner_thread()
         if not self._has_ever_used(key):
-            return datetime.datetime.min
+            return None
 
         interval = self.cooldown_time_for(key)
         return self.last_use_times[key] + interval
