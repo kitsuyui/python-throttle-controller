@@ -31,6 +31,7 @@ package-dir = { "throttle_controller" = "throttle_controller" }
 dev = [
     "pytest",
     "pytest-cov",
+    "setuptools>=84.1.0",
     "poethepoet",
     "setuptools-scm",
     "ruff",
